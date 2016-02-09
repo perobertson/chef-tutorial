@@ -49,3 +49,17 @@ mysql_database_user node['awesome_customers']['database']['app']['username'] do
   host node['awesome_customers']['database']['host']
   action [:create, :grant]
 end
+
+# Write schema seed file to filesystem.
+cookbook_file node['awesome_customers']['database']['seed_file'] do
+  source 'create-tables.sql'
+  owner 'root'
+  group 'root'
+  mode '0600'
+end
+
+# Seed the database with a table and test data.
+execute 'initialize database' do
+  command "mysql -h #{node['awesome_customers']['database']['host']} -u #{node['awesome_customers']['database']['app']['username']} -p#{user_password_data_bag_item['password']} -D #{node['awesome_customers']['database']['dbname']} < #{node['awesome_customers']['database']['seed_file']}"
+  not_if  "mysql -h #{node['awesome_customers']['database']['host']} -u #{node['awesome_customers']['database']['app']['username']} -p#{user_password_data_bag_item['password']} -D #{node['awesome_customers']['database']['dbname']} -e 'describe customers;'"
+end
